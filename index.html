@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>News Fact-Checker · Secure (Supabase)</title>
+<style>
+  :root{--bg:#0f1220;--panel:#1a1e33;--panel2:#232842;--line:#333a5c;--txt:#e8eaf5;--muted:#9aa0c3;
+    --accent:#7c6cff;--accent2:#00d1b2;--red:#ff5c7a;--redbg:#3a1220;--yellow:#ffcc4d;--yellowbg:#3a3016;
+    --blue:#5ab0ff;--bluebg:#132a3a;--green:#3ddc84;--greenbg:#12301e;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--txt);line-height:1.55}
+  header{padding:16px 26px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#171a2e,#1d2140);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{margin:0;font-size:18px;font-weight:700}header h1 span{color:var(--accent2)}
+  .who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:10px}
+  .lock{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--greenbg);color:var(--green)}
+  .wrap{padding:20px 26px 60px;max-width:1180px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .card.src{border-color:#2a5a44}
+  .card h2{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--panel2);color:var(--muted)}
+  textarea{width:100%;min-height:190px;resize:vertical;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;line-height:1.65}
+  input,select{width:100%;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13px}
+  textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .rowline{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}.rowline>*{flex:1;min-width:0}
+  button{cursor:pointer;border:none;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:600;font-family:inherit}
+  .btn-main{background:var(--accent);color:#fff}.btn-main:hover{background:#6a5aff}
+  .btn-ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}.btn-ghost:hover{border-color:var(--accent)}
+  .btn-sm{padding:8px 14px;font-size:12px}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5}
+  .status{font-size:12px;padding:8px 10px;border-radius:8px;display:none;margin-top:8px}
+  .status.show{display:block}.status.ok{background:var(--greenbg);color:var(--green)}
+  .status.warn{background:var(--yellowbg);color:var(--yellow)}.status.err{background:var(--redbg);color:var(--red)}
+  .row{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+  .opts{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-left:auto}
+  .opts label{display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+  .opts label input{width:auto;flex:0 0 auto;margin:0}
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 6px}
+  .pill{border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;border:1px solid var(--line)}
+  .pill small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+  .pill.red{background:var(--redbg);color:var(--red);border-color:#5a2030}
+  .pill.yellow{background:var(--yellowbg);color:var(--yellow);border-color:#5a4a20}
+  .pill.blue{background:var(--bluebg);color:var(--blue);border-color:#204a5a}
+  .pill.pass{background:var(--greenbg);color:var(--green);border-color:#205a30}
+  h3.sec{font-size:15px;margin:24px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px}
+  .sev.red{color:var(--red);font-weight:700}.sev.yellow{color:var(--yellow);font-weight:700}.sev.blue{color:var(--blue);font-weight:700}
+  code.k{background:var(--panel2);padding:1px 6px;border-radius:5px;color:#ffd479}
+  .dline{background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .dline.add{border-left-color:var(--yellow)}.dline.miss{border-left-color:var(--blue)}
+  .dnum{font-size:11px;color:var(--muted);margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .simbadge{background:var(--panel2);border-radius:20px;padding:1px 8px;font-size:10px}
+  .drow{display:flex;gap:10px;margin-bottom:6px;font-size:14.5px;line-height:1.8}
+  .dlab{flex:0 0 auto;font-size:12px;font-weight:700;padding-top:3px;width:74px}
+  .dlab.a{color:var(--red)}.dlab.s{color:var(--green)}
+  .dtxt{flex:1}
+  .hlA{background:var(--redbg);color:#ff9db0;border-radius:4px;padding:1px 5px;font-weight:600}
+  .hlS{background:var(--greenbg);color:#7ff0a8;border-radius:4px;padding:1px 5px;font-weight:600}
+  .chg{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{background:var(--panel2);border-radius:20px;padding:3px 12px;font-size:12.5px;white-space:nowrap}
+  .chip b{color:var(--red);font-weight:600}.chip i{font-style:normal;color:var(--green);font-weight:600}
+  .empty{color:var(--muted);font-size:13px;padding:8px 2px}.count-ok{color:var(--green)}
+  .locmark{background:var(--redbg);color:#ff9db0;border-radius:3px;padding:0 4px;font-weight:600}
+  .loccell{color:var(--muted);font-size:12.5px;line-height:1.6}
+  .loccell b{color:var(--txt);font-weight:600}
+  details.fold{margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0}
+  details.fold>summary{cursor:pointer;padding:10px 14px;font-size:13px;color:var(--yellow);list-style:none;user-select:none}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary:before{content:'▸ ';color:var(--muted)}
+  details.fold[open]>summary:before{content:'▾ '}
+  details.fold .foldbody{padding:6px 14px 12px}
+  .addln{font-size:13.5px;line-height:1.7;padding:6px 0;border-bottom:1px solid var(--line);color:var(--txt)}
+  .addln:last-child{border-bottom:none}
+  .emb{color:var(--muted);font-size:12px;margin-left:6px}
+  .fileup{font-size:11px;color:var(--muted)}
+  .fileup input{display:none}
+  .fileup label{cursor:pointer;color:var(--accent2);text-decoration:underline}
+  #preview{display:none;gap:16px;margin-top:20px}
+  #preview.show{display:flex;flex-wrap:wrap}
+  .pvcol{flex:1;min-width:280px;background:var(--panel);border:1px solid var(--line);border-radius:12px;max-height:74vh;overflow:auto}
+  .pvhd{position:sticky;top:0;background:var(--panel2);padding:10px 14px;font-size:13px;font-weight:700;border-bottom:1px solid var(--line);z-index:3}
+  .pvtable{width:100%;border-collapse:collapse;font-size:12.5px}
+  .pvtable th,.pvtable td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  .pvtable th{background:#2a3050;position:sticky;top:39px;z-index:2}
+  .pvtable tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+  .pvtext{white-space:pre-wrap;padding:14px;font-size:13px;margin:0;line-height:1.7}
+  .pvweb{background:#fff;color:#222;padding:6px;margin:8px;border-radius:8px}
+  .pvweb img{max-width:100%;height:auto}
+  .pvweb table{max-width:100%;border-collapse:collapse}
+  .pvweb *{max-width:100%}
+  .note{margin-top:24px;padding:14px 16px;background:var(--panel2);border-radius:12px;font-size:13px;color:var(--muted)}
+  .note b{color:var(--txt)}
+  .hidden{display:none}
+  .gate{max-width:400px;margin:8vh auto;padding:26px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+  .gate h2{margin:0 0 6px;font-size:18px}.gate p{margin:0 0 18px;color:var(--muted);font-size:13px}
+  .gate input{margin-bottom:10px}.gate button{width:100%;margin-top:4px}
+  .config-warn{background:var(--yellowbg);color:var(--yellow);padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:16px;line-height:1.6}
+  .lib{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .doc-item{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12.5px;cursor:pointer}
+  .doc-item:hover{border-color:var(--accent)}.doc-item .del{color:var(--red);margin-left:4px}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--muted);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="gate" class="gate">
+  <h2>🔒 เข้าสู่ระบบ</h2>
+  <p>เครื่องมือนี้เก็บเอกสารในฐานข้อมูลส่วนตัวของทีม เข้าได้เฉพาะสมาชิก</p>
+  <div id="configWarn" class="config-warn hidden">⚠️ ยังไม่ได้ตั้งค่า Supabase — แก้ SUPABASE_URL และ SUPABASE_ANON_KEY ด้านบนของ &lt;script&gt;</div>
+  <input type="email" id="loginEmail" placeholder="name@company.com">
+  <input type="password" id="loginPass" placeholder="รหัสผ่าน">
+  <button class="btn-main" onclick="signIn()">เข้าสู่ระบบ</button>
+  <button class="btn-ghost" onclick="signUp()" style="margin-top:8px">สมัครสมาชิกใหม่</button>
+  <div id="authStatus" class="status"></div>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>🔍 News <span>Fact-Checker</span> · Secure</h1>
+    <span class="lock">🔒 ข้อมูลอยู่ในเซิร์ฟเวอร์ทีม</span>
+    <div class="who"><span id="whoEmail"></span><button class="btn-ghost btn-sm" onclick="signOut()">ออกจากระบบ</button></div>
+  </header>
+  <div class="wrap">
+    <div class="grid">
+      <div class="card src">
+        <h2>📄 เอกสารต้นฉบับ</h2>
+        <div class="rowline">
+          <input type="url" id="sourceUrl" placeholder="ลิงก์ Google Sheet/Doc">
+          <button class="btn-ghost btn-sm" style="flex:0 0 auto" onclick="fetchSide('s')">ดึง</button>
+        </div>
+        <div class="fileup" style="margin-bottom:6px">📎 <label>อัปโหลด xlsx/csv<input type="file" accept=".xlsx,.xls,.csv" onchange="uploadSource(this)"></label> (แสดงเป็นตารางในมุมมองภาพรวม)</div>
+        <textarea id="source" placeholder="เนื้อหาต้นฉบับ" oninput="RAW.s={kind:'text'}"></textarea>
+        <div id="s-status" class="status"></div>
+        <div class="rowline" style="margin-top:10px">
+          <input id="sTitle" placeholder="ตั้งชื่อเพื่อบันทึก">
+          <button class="btn-ghost btn-sm" style="flex:0 0 auto" onclick="saveDoc('source')">💾 บันทึก</button>
+        </div>
+        <div class="lib" id="s-lib"></div>
+      </div>
+      <div class="card">
+        <h2>📝 บทความข่าว <span class="tag">ตัวที่จะขึ้นเว็บ</span></h2>
+        <div class="rowline">
+          <input type="url" id="articleUrl" placeholder="ลิงก์ข่าว (เช่น tosm.exe.in.th/news/...)">
+          <button class="btn-ghost btn-sm" style="flex:0 0 auto" onclick="fetchSide('a')">ดึง</button>
+        </div>
+        <textarea id="article" placeholder="เนื้อหาบทความข่าว"></textarea>
+        <div id="a-status" class="status"></div>
+        <div class="rowline" style="margin-top:10px">
+          <input id="aTitle" placeholder="ตั้งชื่อเพื่อบันทึก">
+          <button class="btn-ghost btn-sm" style="flex:0 0 auto" onclick="saveDoc('article')">💾 บันทึก</button>
+        </div>
+        <div class="lib" id="a-lib"></div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn-main" onclick="runCheck()">🔍 ตรวจเทียบ</button>
+      <button class="btn-ghost" onclick="showPreview()">👁 มุมมองภาพรวม</button>
+      <button class="btn-ghost" onclick="loadDemo()">ลองตัวอย่าง</button>
+      <div class="opts">
+        <label><input type="checkbox" id="optNum" checked> ตัวเลข/วันเวลา</label>
+        <label><input type="checkbox" id="optEn" checked> ชื่อเฉพาะ (EN)</label>
+        <label><input type="checkbox" id="optConsist" checked> ความสม่ำเสมอ</label>
+        <label><input type="checkbox" id="optSmart" checked> จับคู่อัตโนมัติ (ไม่อิงลำดับบรรทัด)</label>
+      </div>
+    </div>
+    <section id="preview"></section>
+    <section id="result" class="hidden"></section>
+    <div class="note">
+      <b>โหมดจับคู่อัตโนมัติ:</b> แต่ละบรรทัดในข่าวจะหาคู่ที่ใกล้เคียงที่สุดในต้นฉบับก่อน แล้วค่อยเทียบ — สลับลำดับเนื้อหาได้ไม่ถือว่าผิด ·
+      การตรวจตัวเลข/ชื่อเฉพาะเทียบทั้งเอกสาร ไม่อิงลำดับอยู่แล้ว · ปิดโหมดนี้ = กลับไปเทียบบรรทัดต่อบรรทัดตรง ๆ
+    </div>
+  </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+// ===================== ตั้งค่า =====================
+const SUPABASE_URL = "https://irjrvlqsfceufhajaobn.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyanJ2bHFzZmNldWZoYWphb2JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MTc1ODUsImV4cCI6MjEwMDk5MzU4NX0.74O2A8yXIUJEF1ObcAHk2DPFq_LYed1-Aj88vu15xzM";
+// 👇 วาง Google OAuth Client ID เดิมของมาดามกลับตรงนี้ (ที่ตั้งไว้ใน Google Cloud)
+const GOOGLE_CLIENT_ID = "451581475673-isjuccqh76ec5d89rge84bgjr9au1qod.apps.googleusercontent.com";  // เช่น "1234-abc.apps.googleusercontent.com"
+// ==================================================
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
+let sb=null;
+if(configured) sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+else document.getElementById("configWarn").classList.remove("hidden");
+
+// ---------- Google OAuth ----------
+const GOOGLE_ON = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.trim().length>10;
+let _tc=null,_gToken=null;
+function ensureTokenClient(){
+  if(_tc)return _tc;
+  if(!window.google||!google.accounts||!google.accounts.oauth2)throw new Error("Google SDK ยังโหลดไม่เสร็จ รอสักครู่แล้วลองใหม่");
+  _tc=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:"https://www.googleapis.com/auth/drive.readonly",callback:()=>{}});
+  return _tc;
+}
+function getGoogleToken(){
+  return new Promise((resolve,reject)=>{
+    if(_gToken)return resolve(_gToken);
+    let tc;try{tc=ensureTokenClient();}catch(e){return reject(e);}
+    tc.callback=(r)=>{ if(r&&r.access_token){_gToken=r.access_token;resolve(_gToken);} else reject(new Error("ไม่ได้รับสิทธิ์เข้าถึง Google Drive")); };
+    tc.requestAccessToken();
+  });
+}
+function googleFile(u){
+  let m=u.match(/docs\.google\.com\/spreadsheets\/d\/([\w-]+)/); if(m)return {id:m[1],type:"sheet"};
+  m=u.match(/docs\.google\.com\/document\/d\/([\w-]+)/);          if(m)return {id:m[1],type:"doc"};
+  return null;
+}
+async function fetchGoogleDrive(fileId,type){
+  const mime=type==="sheet"?"text/csv":"text/plain";
+  const call=(tok)=>fetch("https://www.googleapis.com/drive/v3/files/"+fileId+"/export?mimeType="+mime,{headers:{Authorization:"Bearer "+tok}});
+  let r=await call(await getGoogleToken());
+  if(r.status===401){_gToken=null;r=await call(await getGoogleToken());}
+  if(!r.ok){
+    let detail="";try{const j=JSON.parse(await r.text());detail=(j.error&&j.error.message)||"";}catch(e){}
+    if(/has not been used|is disabled|SERVICE_DISABLED/i.test(detail))throw new Error("ยังไม่ได้เปิด Google Drive API — ไปเปิดที่ APIs & Services → Library → Google Drive API → Enable");
+    if(r.status===403)throw new Error("403 - บัญชีที่เลือกไม่มีสิทธิ์ดูไฟล์นี้ (เลือกบัญชีให้ตรงกับที่เปิดไฟล์ได้)"+(detail?" · "+detail:""));
+    if(r.status===404)throw new Error("404 - ไม่พบไฟล์ (ตรวจว่าลิงก์ถูก และเป็น Google Doc/Sheet)");
+    throw new Error("Google API "+r.status+(detail?" - "+detail:""));
+  }
+  return r.text();
+}
+
+// ---------- auth ----------
+function aStat(cls,msg){const el=document.getElementById("authStatus");el.className="status show "+cls;el.innerHTML=msg;}
+window.signIn=async()=>{ if(!sb)return aStat("err","ยังไม่ได้ตั้งค่า Supabase");
+  aStat("warn",'<span class="spin"></span>กำลังเข้าสู่ระบบ...');
+  const {error}=await sb.auth.signInWithPassword({email:loginEmail.value.trim(),password:loginPass.value});
+  if(error)return aStat("err","❌ "+error.message); showApp(); };
+window.signUp=async()=>{ if(!sb)return aStat("err","ยังไม่ได้ตั้งค่า Supabase");
+  if(loginPass.value.length<6)return aStat("err","รหัสผ่านอย่างน้อย 6 ตัว");
+  aStat("warn",'<span class="spin"></span>กำลังสมัคร...');
+  const {error}=await sb.auth.signUp({email:loginEmail.value.trim(),password:loginPass.value});
+  if(error)return aStat("err","❌ "+error.message);
+  aStat("ok","✅ สมัครแล้ว — ถ้าเปิด email confirm ให้เช็คอีเมลก่อน แล้วเข้าสู่ระบบ"); };
+window.signOut=async()=>{await sb.auth.signOut();location.reload();};
+let CURRENT=null;
+async function showApp(){
+  const {data:{user}}=await sb.auth.getUser(); if(!user)return;
+  CURRENT=user;
+  document.getElementById("gate").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("whoEmail").textContent=user.email;
+  await logAction("view","เปิดเครื่องมือ"); loadLibrary();
+}
+if(sb) sb.auth.getSession().then(({data})=>{if(data.session)showApp();});
+async function logAction(action,detail,doc_id=null){ if(!sb||!CURRENT)return;
+  try{await sb.from("audit_log").insert({user_id:CURRENT.id,user_email:CURRENT.email,action,detail,doc_id});}catch(e){} }
+
+// ---------- document library ----------
+window.saveDoc=async(kind)=>{
+  const title=document.getElementById(kind==='source'?'sTitle':'aTitle').value.trim();
+  const content=document.getElementById(kind==='source'?'source':'article').value;
+  const sEl=document.getElementById(kind==='source'?'s-status':'a-status');
+  if(!title){sEl.className="status show warn";sEl.textContent="ตั้งชื่อก่อนบันทึก";return;}
+  if(!content.trim()){sEl.className="status show warn";sEl.textContent="ไม่มีเนื้อหาให้บันทึก";return;}
+  const {data,error}=await sb.from("documents").insert({owner:CURRENT.id,title,kind,content}).select().single();
+  if(error){sEl.className="status show err";sEl.textContent="❌ "+error.message;return;}
+  sEl.className="status show ok";sEl.textContent="✅ บันทึกแล้ว"; await logAction("save",title,data.id); loadLibrary();
+};
+async function loadLibrary(){
+  const {data,error}=await sb.from("documents").select("id,title,kind,created_at").order("created_at",{ascending:false});
+  if(error)return;
+  for(const kind of ["source","article"]){
+    const box=document.getElementById(kind==='source'?'s-lib':'a-lib');
+    const items=data.filter(d=>d.kind===kind);
+    box.innerHTML=items.length?"":'<span class="hint">ยังไม่มีเอกสารที่บันทึก</span>';
+    items.forEach(d=>{
+      const el=document.createElement("span");el.className="doc-item";
+      el.innerHTML='📄 '+esc(d.title)+' <span class="del">✕</span>';
+      el.querySelector(".del").onclick=async(ev)=>{ev.stopPropagation();
+        if(!confirm('ลบ "'+d.title+'"?'))return;
+        await sb.from("documents").delete().eq("id",d.id); await logAction("delete",d.title,d.id); loadLibrary();};
+      el.onclick=async()=>{ const {data:full}=await sb.from("documents").select("content").eq("id",d.id).single();
+        document.getElementById(kind==='source'?'source':'article').value=full.content; RAW[kind==='source'?'s':'a']={kind:'text'}; await logAction("view",d.title,d.id);};
+      box.appendChild(el);
+    });
+  }
+}
+
+// ---------- raw content เก็บไว้ทำ Preview (ตาราง/หน้าเว็บ) ----------
+const RAW={s:{kind:'text'},a:{kind:'text'}};
+window.RAW=RAW;
+function parseCSV(text){
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false;} else cur+=c; }
+    else{ if(c==='"')inQ=true; else if(c===','){row.push(cur);cur='';} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';} else if(c==='\r'){} else cur+=c; }
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+function gridToText(grid){return grid.map(r=>r.map(c=>String(c==null?'':c).trim()).filter(c=>c!=='').join(' | ')).filter(l=>l).join('\n');}
+function renderGrid(grid){
+  if(!grid||!grid.length)return '<div class="empty" style="padding:14px">ไม่มีข้อมูลตาราง</div>';
+  const cols=Math.max(...grid.map(r=>r.length));
+  let h='<table class="pvtable">';
+  grid.forEach((r,i)=>{h+='<tr>';for(let c=0;c<cols;c++){const v=esc(String(r[c]==null?'':r[c]));h+=i===0?'<th>'+v+'</th>':'<td>'+v+'</td>';}h+='</tr>';});
+  return h+'</table>';
+}
+function coreApiParts(body){let d;try{d=JSON.parse(body).data;}catch(e){return null;}
+  const trs=d.translations||[];return trs.find(t=>t.locale==='th')||trs[0]||null;}
+function sanitizeHTML(html){const d=new DOMParser().parseFromString(html,'text/html');
+  d.querySelectorAll('script,noscript,iframe,link,meta').forEach(n=>n.remove());return d.body.innerHTML;}
+
+// ---------- Preview: ต้นฉบับ=ตาราง / บทความ=หน้าเว็บ ----------
+window.showPreview=()=>{
+  const box=document.getElementById('preview');
+  let sHTML;
+  if(RAW.s.kind==='grid') sHTML=renderGrid(RAW.s.grid);
+  else sHTML='<pre class="pvtext">'+esc(document.getElementById('source').value||'(ยังไม่มีเนื้อหาต้นฉบับ)')+'</pre>';
+  let aHTML;
+  if(RAW.a.kind==='html') aHTML='<div class="pvweb">'+sanitizeHTML(RAW.a.html)+'</div>';
+  else aHTML='<div class="pvweb"><div style="white-space:pre-wrap">'+esc(document.getElementById('article').value||'(ยังไม่มีบทความ)')+'</div></div>';
+  box.innerHTML='<div class="pvcol"><div class="pvhd">📄 เอกสารต้นฉบับ'+(RAW.s.kind==='grid'?' (ตาราง)':'')+'</div>'+sHTML+'</div>'+
+                '<div class="pvcol"><div class="pvhd">📝 บทความ'+(RAW.a.kind==='html'?' (หน้าเว็บจริง)':'')+'</div>'+aHTML+'</div>';
+  box.classList.add('show'); box.scrollIntoView({behavior:'smooth',block:'start'});
+};
+// อัปโหลด xlsx/csv เป็นต้นฉบับ
+window.uploadSource=(input)=>{
+  const f=input.files[0]; if(!f)return;
+  const sEl=document.getElementById('s-status');
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      let grid;
+      if(/\.csv$/i.test(f.name)) grid=parseCSV(new TextDecoder('utf-8').decode(e.target.result));
+      else{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        grid=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}).filter(r=>r.some(c=>String(c).trim()!=='')); }
+      RAW.s={kind:'grid',grid};
+      document.getElementById('source').value=gridToText(grid);
+      sEl.className='status show ok'; sEl.innerHTML='✅ อ่าน '+esc(f.name)+' ('+grid.length+' แถว) — กด <b>👁 มุมมองภาพรวม</b> เพื่อดูเป็นตาราง';
+    }catch(err){sEl.className='status show err';sEl.textContent='❌ อ่านไฟล์ไม่ได้: '+err.message;}
+  };
+  reader.readAsArrayBuffer(f);
+};
+
+// ---------- fetching ----------
+const CORE_API_GAME_ID={'tosm.exe.in.th':'6986fe8f-5062-4bf1-9352-fdcf68682e85'};
+window.fetchSide=async(side)=>{
+  const input=document.getElementById(side==='a'?'articleUrl':'sourceUrl');
+  const target=document.getElementById(side==='a'?'article':'source');
+  const sEl=document.getElementById(side+'-status');
+  const raw=input.value.trim();
+  if(!raw){sEl.className="status show err";sEl.textContent="⚠️ ยังไม่ได้ใส่ลิงก์";return;}
+  // Google Doc/Sheet + OAuth → ดึงตามสิทธิ์บัญชี
+  const gf=googleFile(raw);
+  if(GOOGLE_ON && gf){
+    sEl.className="status show warn";sEl.innerHTML='<span class="spin"></span>กำลังดึงผ่านบัญชี Google ของคุณ...';
+    try{ const body=await fetchGoogleDrive(gf.id,gf.type);
+      let text;
+      if(gf.type==="sheet"){const grid=parseCSV(body);RAW[side==='a'?'a':'s']={kind:'grid',grid};text=gridToText(grid);}
+      else{RAW[side==='a'?'a':'s']={kind:'text'};text=body.trim();}
+      if(!text.trim()){sEl.className="status show warn";sEl.textContent="⚠️ ไฟล์ว่าง หรือ export เป็นข้อความไม่ได้";return;}
+      target.value=text; sEl.className="status show ok";sEl.textContent="✅ ดึงสำเร็จ "+text.length.toLocaleString()+" ตัวอักษร"+(gf.type==="sheet"?" · กด 👁 ดูเป็นตารางได้":"")+" (ตามสิทธิ์บัญชีคุณ)"; await logAction("fetch_google",raw.slice(0,200));
+    }catch(e){sEl.className="status show err";sEl.textContent="❌ "+e.message;}
+    return;
+  }
+  // อื่น ๆ → ผ่าน Edge Function
+  sEl.className="status show warn";sEl.innerHTML='<span class="spin"></span>กำลังดึงผ่านเซิร์ฟเวอร์ทีม...';
+  const {data:{session}}=await sb.auth.getSession();
+  try{
+    const res=await fetch(SUPABASE_URL+"/functions/v1/fetch-url",{method:"POST",
+      headers:{"Authorization":"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({url:raw})});
+    const j=await res.json();
+    if(!res.ok){sEl.className="status show err";sEl.textContent="❌ "+(j.error||res.status);return;}
+    if((j.kind==="doc"||j.kind==="sheet")&&/<!DOCTYPE html|<html[ >]|id="docs-|accounts\.google|primary-button/i.test(j.body.slice(0,800))){
+      sEl.className="status show err";sEl.innerHTML='🔒 เอกสารนี้ยังไม่ได้เปิดสิทธิ์สาธารณะ — เปิด Share → "Anyone with the link · Viewer" หรือใช้โหมดวางข้อความ (ถ้าตั้ง Google OAuth แล้ว วางลิงก์ Google ได้เลยตามสิทธิ์บัญชี)';return;
+    }
+    let text;const key=side==='a'?'a':'s';
+    if(j.kind==="coreapi"){const tr=coreApiParts(j.body);
+      if(tr){RAW[key]={kind:'html',html:'<h2 style="color:#169179">'+esc(tr.title||'')+'</h2><p><b>'+esc(tr.summary||'')+'</b></p>'+(tr.content||'')};}
+      text=coreApiToText(j.body);}
+    else if(j.kind==="sheet"){const grid=parseCSV(j.body);RAW[key]={kind:'grid',grid};text=gridToText(grid);}
+    else if(j.kind==="doc"){RAW[key]={kind:'text'};text=j.body.trim();}
+    else{RAW[key]={kind:'html',html:sanitizeHTML(j.body)};text=htmlToText(j.body);}
+    if(/Loading\.\.\.|กำลังโหลด|enable JavaScript/i.test(text)||text.length<250){
+      target.value=text;sEl.className="status show warn";sEl.innerHTML="⚠️ ได้แต่หน้าเปล่า — เว็บนี้โหลดด้วย JavaScript ใช้ Claude Skill แทน";return;}
+    target.value=text;sEl.className="status show ok";sEl.textContent="✅ ดึงสำเร็จ "+text.length.toLocaleString()+" ตัวอักษร";
+  }catch(e){sEl.className="status show err";sEl.textContent="❌ "+e.message;}
+};
+function htmlToText(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  doc.querySelectorAll('script,style,noscript,nav,header,footer,svg,iframe').forEach(n=>n.remove());
+  const main=doc.querySelector('article,main,[class*=content],[class*=news]')||doc.body;
+  return main?(main.innerText||main.textContent||'').replace(/\n{3,}/g,'\n\n').replace(/[ \t]+/g,' ').trim():'';
+}
+function coreApiToText(body){
+  let d;try{d=JSON.parse(body).data;}catch(e){return '';}
+  const trs=d.translations||[];const tr=trs.find(t=>t.locale==='th')||trs[0]||{};
+  const parts=[]; if(tr.title)parts.push(tr.title); if(tr.summary)parts.push(tr.summary);
+  if(tr.content){const doc=new DOMParser().parseFromString('<div>'+tr.content+'</div>','text/html');
+    doc.querySelectorAll('script,style,img').forEach(n=>n.remove());
+    parts.push((doc.body.innerText||doc.body.textContent||'').replace(/\n{3,}/g,'\n\n').replace(/[ \t]+/g,' ').trim());}
+  return parts.join('\n\n');
+}
+function csvToText(csv){return csv.split(/\r?\n/).map(l=>{
+  const cells=(l.match(/("([^"]|"")*"|[^,]*)(,|$)/g)||[]).map(c=>c.replace(/,$/,'').replace(/^"|"$/g,'').replace(/""/g,'"').trim()).filter(c=>c!=='');
+  return cells.join(' | ');}).filter(l=>l.trim()).join('\n');}
+
+// ---------- analysis (order-independent) ----------
+function normThaiDigits(s){const m={'๐':'0','๑':'1','๒':'2','๓':'3','๔':'4','๕':'5','๖':'6','๗':'7','๘':'8','๙':'9'};return s.replace(/[๐-๙]/g,d=>m[d]);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function extractNumbers(text){const t=normThaiDigits(text),o=new Map();
+  const re=/\d{1,2}:\d{2}(?::\d{2})?|\d{1,4}[\/.\-]\d{1,2}[\/.\-]\d{1,4}|\d[\d,]*\.\d+%?|\d[\d,]*%?|v?\d+\.\d+(?:\.\d+)?/gi;
+  let m;while((m=re.exec(t))!==null){const k=m[0].replace(/,/g,'');o.set(k,(o.get(k)||0)+1);}return o;}
+function extractLatin(text){const o=new Map();const re=/[A-Za-z][A-Za-z0-9'’&\-]{1,}/g;
+  const stop=new Set(['the','and','for','you','are','with','this','that','from','have','will','your','our','all','new','get','can','not','was','has','but','now','http','https','www','com']);
+  let m;while((m=re.exec(text))!==null){const w=m[0];if(w.length<2||stop.has(w.toLowerCase()))continue;o.set(w,(o.get(w)||0)+1);}return o;}
+function mapDiff(a,b){const o=[];for(const [k,c] of a){if(!b.has(k))o.push({k,c});}return o;}
+const VG=[['อัปเดต','อัพเดท','อัพเดต','อัปเดท'],['อีเวนต์','อีเว้นท์','อีเวนท์'],['เซิร์ฟเวอร์','เซิฟเวอร์'],['แอป','แอพ'],['เว็บไซต์','เวบไซต์'],['ไอเทม','ไอเท็ม'],['แพตช์','แพทช์'],['เกม','เกมส์'],['โปรโมชัน','โปรโมชั่น']];
+function consistencyIssues(text){const seen=new Set(),o=[];for(const g of VG){const f=g.filter(v=>text.includes(v));if(f.length>1){const k=f.join('|');if(!seen.has(k)){seen.add(k);o.push(f);}}}return o;}
+
+// ---------- diff helpers ----------
+function tokWords(s){return s.replace(/\s+/g,' ').trim().split(' ').filter(x=>x!=='');}
+function lcsDiff(a,b){const n=a.length,m=b.length;if(n*m>1200000)return[...a.map(v=>({t:'del',v})),...b.map(v=>({t:'ins',v}))];
+  const dp=Array.from({length:n+1},()=>new Int32Array(m+1));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+  const res=[];let i=0,j=0;
+  while(i<n&&j<m){if(a[i]===b[j]){res.push({t:'eq',v:a[i]});i++;j++;}else if(dp[i+1][j]>=dp[i][j+1]){res.push({t:'del',v:a[i]});i++;}else{res.push({t:'ins',v:b[j]});j++;}}
+  while(i<n)res.push({t:'del',v:a[i++]});while(j<m)res.push({t:'ins',v:b[j++]});return res;}
+function coalesce(d){const o=[];for(const p of d){if(o.length&&o[o.length-1].t===p.t)o[o.length-1].v+=' '+p.v;else o.push({t:p.t,v:p.v});}return o;}
+function changePairs(runs){const ch=[];for(let i=0;i<runs.length;i++){if(runs[i].t==='del'&&runs[i+1]&&runs[i+1].t==='ins'){ch.push([runs[i].v,runs[i+1].v]);i++;}else if(runs[i].t==='del')ch.push([runs[i].v,'(ตัดออก)']);else if(runs[i].t==='ins')ch.push(['(ไม่มีในข่าว)',runs[i].v]);}return ch;}
+function renderSide(runs,which){return runs.filter(r=>r.t==='eq'||r.t===which).map(r=>r.t==='eq'?esc(r.v):'<span class="'+(which==='del'?'hlA':'hlS')+'">'+esc(r.v)+'</span>').join(' ');}
+function splitLines(s){return s.split(/\n+/).map(x=>x.trim()).filter(x=>x);}
+function similarity(a,b){const A=tokWords(a),B=tokWords(b);if(!A.length||!B.length)return 0;return Math.round(200*lcsDiff(A,B).filter(d=>d.t==='eq').length/(A.length+B.length));}
+
+// ---------- emoji / ตำแหน่ง ----------
+function stripEmoji(s){return s.replace(/[\p{Extended_Pictographic}️‍⃣]/gu,'').replace(/\s+/g,' ').trim();}
+function locate(article,token){
+  const lines=splitLines(article);
+  for(let i=0;i<lines.length;i++){
+    const raw=lines[i], norm=normThaiDigits(raw).replace(/,/g,'');
+    let src=raw, pos=raw.indexOf(token);
+    if(pos<0){src=norm;pos=norm.indexOf(token);}
+    if(pos>=0){const s=Math.max(0,pos-16),e=Math.min(src.length,pos+token.length+16);
+      return {line:i+1,snip:(s>0?'…':'')+esc(src.slice(s,pos))+'<span class="locmark">'+esc(token)+'</span>'+esc(src.slice(pos+token.length,e))+(e<src.length?'…':'')};}
+  }
+  return {line:null,snip:''};
+}
+function locCell(loc){return loc&&loc.line?'<div class="loccell"><b>ย่อหน้า '+loc.line+'</b><br>'+loc.snip+'</div>':'<span class="loccell">ไม่พบในข่าว</span>';}
+
+// ---------- fuzzy line matching (Dice bigram, ไม่อิงลำดับ + ตัด emoji) ----------
+function bigrams(s){s=stripEmoji(normThaiDigits(s)).replace(/\s+/g,'').toLowerCase();const m=new Map();
+  for(let i=0;i<s.length-1;i++){const g=s.slice(i,i+2);m.set(g,(m.get(g)||0)+1);}return m;}
+function diceSim(a,b){if(!a.size||!b.size)return 0;let inter=0,ta=0,tb=0;
+  const [sm,lg]=a.size<b.size?[a,b]:[b,a];
+  for(const [g,c] of sm){if(lg.has(g))inter+=Math.min(c,lg.get(g));}
+  for(const c of a.values())ta+=c;for(const c of b.values())tb+=c;return 2*inter/(ta+tb);}
+function smartMatch(aLines,sLines,threshold){
+  const aB=aLines.map(bigrams),sB=sLines.map(bigrams),pairs=[];
+  for(let i=0;i<aLines.length;i++)for(let j=0;j<sLines.length;j++){const s=diceSim(aB[i],sB[j]);if(s>=threshold)pairs.push({i,j,s});}
+  pairs.sort((x,y)=>y.s-x.s);
+  const aUsed=Array(aLines.length).fill(-1),sUsed=Array(sLines.length).fill(false),matched=[];
+  for(const p of pairs){if(aUsed[p.i]<0&&!sUsed[p.j]){aUsed[p.i]=p.j;sUsed[p.j]=true;matched.push(p);}}
+  return {matched,aUsed,sUsed};
+}
+
+// ---------- main ----------
+window.runCheck=async()=>{
+  const article=document.getElementById('article').value,source=document.getElementById('source').value;
+  const box=document.getElementById('result');
+  if(!article.trim()||!source.trim()){box.classList.remove('hidden');box.innerHTML='<div class="empty">⚠️ ใส่เนื้อหาทั้งสองฝั่งก่อนตรวจ</div>';return;}
+  await logAction("check","ตรวจเทียบข่าว");
+  const red=[],yellow=[],blue=[];
+  if(document.getElementById('optNum').checked){const aN=extractNumbers(article),sN=extractNumbers(source);
+    mapDiff(aN,sN).forEach(x=>red.push({art:x.k,src:'— ไม่พบในต้นฉบับ',type:'ตัวเลข/วันเวลา',loc:locate(article,x.k)}));
+    mapDiff(sN,aN).forEach(x=>blue.push({issue:'ต้นฉบับมี '+x.k+' แต่ไม่พบในข่าว',fix:'เช็คว่าข่าวลืมใส่ไหม'}));}
+  if(document.getElementById('optEn').checked){const aL=extractLatin(article),sL=extractLatin(source);
+    const low=new Map();for(const [k] of sL)low.set(k.toLowerCase(),k);
+    mapDiff(aL,sL).forEach(x=>{const l=x.k.toLowerCase();if(low.has(l))yellow.push({art:x.k,src:low.get(l),type:'ตัวพิมพ์/สะกด',loc:locate(article,x.k)});else red.push({art:x.k,src:'— ไม่พบในต้นฉบับ',type:'ชื่อเฉพาะ',loc:locate(article,x.k)});});}
+  if(document.getElementById('optConsist').checked)consistencyIssues(article).forEach(g=>yellow.push({art:g.join(' / '),src:'—',type:'สะกดไม่สม่ำเสมอ',loc:locate(article,g[0])}));
+
+  const sim=similarity(article,source);
+  let verdict,vc;if(red.length){verdict='❌ ไม่ผ่าน';vc='red';}else if(yellow.length){verdict='⚠️ มีข้อสังเกต';vc='yellow';}else{verdict='✅ ผ่าน';vc='pass';}
+  let h='<div class="summary"><div class="pill '+vc+'">'+verdict+'</div>';
+  h+='<div class="pill red">🔴 '+red.length+'<small>Critical</small></div><div class="pill yellow">🟡 '+yellow.length+'<small>Warning</small></div><div class="pill blue">🔵 '+blue.length+'<small>Note</small></div>';
+  h+='<div class="pill '+(sim>=80?'pass':'blue')+'">'+sim+'%<small>ความสอดคล้อง</small></div></div>';
+
+  const aL=splitLines(article),sL=splitLines(source);
+  if(document.getElementById('optSmart').checked){
+    // ===== โหมดจับคู่อัตโนมัติ (ไม่อิงลำดับ + ทน emoji/คำตกแต่ง) =====
+    h+='<h3 class="sec">🔗 จับคู่เนื้อหา (ไม่อิงลำดับบรรทัด)</h3>';
+    const {matched,aUsed,sUsed}=smartMatch(aL,sL,0.4);
+    // แยกคู่ที่ต่างจริง (มีการเปลี่ยนค่า/ขาดเนื้อหา) ออกจากคู่ที่แค่เติม emoji/คำตกแต่ง
+    let body='',realCount=0,embCount=0;
+    matched.filter(p=>p.s<0.999).sort((x,y)=>x.i-y.i).forEach(p=>{
+      const runs=coalesce(lcsDiff(tokWords(stripEmoji(aL[p.i])),tokWords(stripEmoji(sL[p.j]))));
+      const hasIns=runs.some(r=>r.t==='ins');   // ins = เนื้อหาต้นฉบับที่ข่าวเปลี่ยน/ตัดออก
+      if(!hasIns){embCount++;return;}           // มีแต่ del = ข่าวเติมคำ/emoji เข้ามาเอง → ไม่ใช่ข้อผิด
+      realCount++;
+      body+='<div class="dline"><div class="dnum">ข่าวย่อหน้า '+(p.i+1)+' ↔ ต้นฉบับย่อหน้า '+(p.j+1)+'<span class="simbadge">คล้าย '+Math.round(p.s*100)+'%</span></div>';
+      body+='<div class="drow"><div class="dlab s">✅ ต้นฉบับ</div><div class="dtxt">'+renderSide(runs,'ins')+'</div></div>';
+      body+='<div class="drow"><div class="dlab a">❌ ข่าว</div><div class="dtxt">'+renderSide(runs,'del')+'</div></div>';
+      const ch=changePairs(runs).filter(c=>c[1]!=='(ตัดออก)'); // เอาเฉพาะที่มีของต้นฉบับเทียบ
+      if(ch.length){body+='<div class="chg"><span style="color:var(--muted);font-size:12px">แก้เป็น:</span>';ch.forEach(c=>body+='<span class="chip"><b>'+esc(c[0])+'</b> → <i>'+esc(c[1])+'</i></span>');body+='</div>';}
+      body+='</div>';
+    });
+    const addLines=[];for(let i=0;i<aL.length;i++)if(aUsed[i]<0&&stripEmoji(aL[i]).length>1)addLines.push({n:i+1,t:aL[i]});
+    const missLines=[];for(let j=0;j<sL.length;j++)if(!sUsed[j]&&stripEmoji(sL[j]).length>1)missLines.push({n:j+1,t:sL[j]});
+    h+='<p class="hint" style="margin:0 0 10px">ต่างจริง '+realCount+' จุด · ข่าวเติมคำ/emoji ที่ไม่นับเป็นผิด '+embCount+' จุด · บรรทัดใหม่ในข่าว '+addLines.length+' · อาจตกหล่นจากต้นฉบับ '+missLines.length+'</p>';
+    h+= realCount?body:'<div class="empty count-ok">✓ เนื้อหาที่ตรงกับต้นฉบับ ไม่มีจุดที่เปลี่ยนค่า/ตัดเนื้อหา</div>';
+    // 🔵 ต้นฉบับมีแต่ข่าวไม่มี — อันนี้สำคัญ โชว์ปกติ
+    if(missLines.length){h+='<h3 class="sec">🔵 อาจตกหล่นจากต้นฉบับ (มีในต้นฉบับ แต่ไม่พบในข่าว)</h3>';
+      missLines.forEach(o=>h+='<div class="dline miss"><div class="dnum">ต้นฉบับย่อหน้า '+o.n+'</div><div class="dtxt">'+esc(o.t)+'</div></div>');}
+    // 🟡 บรรทัดที่ข่าวเขียนใหม่/เพิ่มเอง — ยุบเก็บ กันตาลาย
+    if(addLines.length){
+      h+='<details class="fold"><summary>🟡 ข่าวเขียนเพิ่ม/เรียบเรียงใหม่ '+addLines.length+' ย่อหน้า (ปกติของการแต่งบทความ — กดเพื่อดู)</summary><div class="foldbody">';
+      addLines.forEach(o=>h+='<div class="addln"><b style="color:var(--muted);font-weight:600">ย่อหน้า '+o.n+':</b> '+esc(o.t)+'</div>');
+      h+='</div></details>';
+    }
+  }else{
+    // ===== โหมดเทียบบรรทัดต่อบรรทัด =====
+    h+='<h3 class="sec">🔀 เทียบรายบรรทัด (ตามลำดับ)</h3>';
+    const rows=Math.max(aL.length,sL.length);let dc=0,dh='';
+    for(let i=0;i<rows;i++){const a=aL[i]||'',s=sL[i]||'';if(a===s)continue;dc++;
+      const runs=coalesce(lcsDiff(tokWords(a),tokWords(s)));
+      dh+='<div class="dline"><div class="dnum">บรรทัด '+(i+1)+'</div>';
+      dh+='<div class="drow"><div class="dlab s">✅ ต้นฉบับ</div><div class="dtxt">'+(renderSide(runs,'ins')||'<span class="empty">(ว่าง)</span>')+'</div></div>';
+      dh+='<div class="drow"><div class="dlab a">❌ ข่าว</div><div class="dtxt">'+(renderSide(runs,'del')||'<span class="empty">(ว่าง)</span>')+'</div></div>';
+      const ch=changePairs(runs);if(ch.length){dh+='<div class="chg"><span style="color:var(--muted);font-size:12px">แก้เป็น:</span>';ch.forEach(p=>dh+='<span class="chip"><b>'+esc(p[0])+'</b> → <i>'+esc(p[1])+'</i></span>');dh+='</div>';}
+      dh+='</div>';}
+    h+=dc?'<p class="hint" style="margin:0 0 10px">พบ '+dc+' บรรทัดที่ต่างกัน</p>'+dh:'<div class="empty count-ok">✓ ทุกบรรทัดตรงกับต้นฉบับ</div>';
+  }
+
+  h+='<h3 class="sec">🔴 ต้องแก้ก่อนขึ้นเว็บ</h3>';
+  if(red.length){h+='<table><tr><th style="width:15%">ในข่าว</th><th style="width:20%">ควรเป็น (ต้นฉบับ)</th><th style="width:15%">ประเภท</th><th>ตำแหน่งในข่าว</th></tr>';red.forEach(x=>h+='<tr><td><code class="k">'+esc(x.art)+'</code></td><td>'+esc(x.src)+'</td><td class="sev red">'+esc(x.type)+'</td><td>'+locCell(x.loc)+'</td></tr>');h+='</table>';}else h+='<div class="empty count-ok">✓ ไม่พบ</div>';
+  h+='<h3 class="sec">🟡 ควรแก้</h3>';
+  if(yellow.length){h+='<table><tr><th style="width:15%">ในข่าว</th><th style="width:20%">ควรเป็น (ต้นฉบับ)</th><th style="width:15%">ประเภท</th><th>ตำแหน่งในข่าว</th></tr>';yellow.forEach(x=>h+='<tr><td><code class="k">'+esc(x.art)+'</code></td><td>'+esc(x.src)+'</td><td class="sev yellow">'+esc(x.type)+'</td><td>'+locCell(x.loc)+'</td></tr>');h+='</table>';}else h+='<div class="empty count-ok">✓ ไม่พบ</div>';
+  if(blue.length){h+='<h3 class="sec">🔵 ข้อสังเกต</h3><table><tr><th>ตำแหน่ง</th><th>ประเด็น</th><th>คำแนะนำ</th></tr>';blue.forEach(x=>h+='<tr><td>'+esc(x.pos)+'</td><td>'+esc(x.issue)+'</td><td>'+esc(x.fix)+'</td></tr>');h+='</table>';}
+  box.classList.remove('hidden');box.innerHTML=h;box.scrollIntoView({behavior:'smooth',block:'start'});
+};
+window.loadDemo=()=>{
+  RAW.s={kind:'text'};RAW.a={kind:'text'};
+  // ต้นฉบับเรียงแบบหนึ่ง / ข่าวสลับลำดับ + แก้ตัวเลข → โชว์ว่าโหมดจับคู่ไม่งอแง
+  document.getElementById('source').value=`เริ่มวันที่ 25 ก.พ. 2026 ถึง 5 มี.ค. 2026
+ผู้เล่นล็อกอินครบ 7 วันรับ Blessed Gem จำนวน 300 ชิ้น
+เซิร์ฟเวอร์เปิดเวลา 10:00 น. (GMT+7)
+ไอเทมพิเศษลดราคา 50% ตลอดแคมเปญ`;
+  document.getElementById('article').value=`🔥 ไอเทมพิเศษลดราคา 40% ตลอดแคมเปญ ห้ามพลาดกันนะคะ!
+เซิร์ฟเวอร์เปิดเวลา 10:00 น. (GMT+7) ⏰
+เริ่มวันที่ 25 ก.พ. 2026 ถึง 5 มี.ค. 2026 ✨
+ผู้เล่นล็อกอินครบ 7 วันรับ Blessed Gem จำนวน 300 ชิ้น
+มาลุ้นรับของรางวัลสุดพิเศษกันได้เลย 🎉🎉`;
+  runCheck();
+};
+</script>
+</body>
+</html>
